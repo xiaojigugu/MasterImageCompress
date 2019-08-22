@@ -1,7 +1,7 @@
-# SuperImageCompressor
+# MasterImageCompressor
 **线程池+队列+观察者模式图片压缩框架**
 
-[![](https://jitpack.io/v/xiaojigugu/SuperImageCompressor.svg)](https://jitpack.io/#xiaojigugu/SuperImageCompressor)  
+[![](https://jitpack.io/v/xiaojigugu/MasterImageCompress.svg)](https://jitpack.io/#xiaojigugu/MasterImageCompress)  
 
 #### 使用
 
@@ -18,11 +18,17 @@
 2.  **Add the dependency:**
 ```  gradle
 	dependencies {
-	        implementation 'com.github.xiaojigugu:SuperImageCompressor:1.0.0'
+	        implementation 'com.github.xiaojigugu:MasterImageCompress:1.0.0'
 	}
 ```  
 
-3. **start**
+3. **start**  
+``` xml
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+```
+
+
 ```  java
             //配置压缩条件
             CompressConfig compressConfig = CompressConfig
