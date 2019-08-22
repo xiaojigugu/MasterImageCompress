@@ -90,7 +90,8 @@ public class MainActivity extends AppCompatActivity {
                         public void onFail(boolean allOrSingle, List<ImageInstance> images, CompressException e) {
                             SystemOut.println("ImageCompressor ===>压缩失败，isAll=" + allOrSingle);
                         }
-                    }).compress();
+                    })
+                    .compress();
 
         }
     }
