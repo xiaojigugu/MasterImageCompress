@@ -75,3 +75,5 @@
            })
            .compress();
 ```  
+document:  
+[原理说明](https://juejin.im/post/5d5e667ff265da03af19d986)
