@@ -2,6 +2,7 @@ package com.junt.superimagecompressor;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -56,10 +57,14 @@ public class MainActivity extends AppCompatActivity {
             //配置压缩条件
             CompressConfig compressConfig = CompressConfig
                     .builder()
-                    .keepSource(false) //是否保留源文件
-                    .comPressType(CompressConfig.TYPE_PIXEL_AND_QUALITY) //压缩方式，分为质量压缩、像素压缩、质量压缩+像素压缩，慎用单独的质量压缩（很容易OOM）！
-                    .maxPixel(2000)  //目标长边像素（eg：原图分辨率:7952 X 5304，压缩后7952最终会小于2000）
-                    .targetSize(500 * 1024) //目标大小500kb以内
+                    .keepSource(true) //是否保留源文件
+                    .comPressType(CompressConfig.TYPE_PIXEL) //压缩方式，分为质量压缩、像素压缩、质量压缩+像素压缩，慎用单独的质量压缩（很容易OOM）！
+                    //目标长边像素,启用像素压缩有效（eg：原图分辨率:7952 X 5304，压缩后7952最终会小于2000）
+                    .maxPixel(1280)
+                    //目标大小500kb以内，启用质量压缩有效
+                    .targetSize(200 * 1024)
+                    .format(Bitmap.CompressFormat.WEBP, Bitmap.Config.ARGB_8888) //压缩配置
+                    .outputDir("storage/emulated/0/DCIM/image_compressed/") //输出目录
                     .build();
             final long finalSize = size;
             ImageCompressManager.builder()
@@ -69,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onStart() {
                             SystemOut.println("ImageCompressor ===>开始压缩");
-                            tvStart.setText(String.format("原文件大小=%s", getNetFileSizeDescription(finalSize)));
+                            tvStart.setText(String.format("源文件总大小=%s", getNetFileSizeDescription(finalSize)));
                             startTime = System.currentTimeMillis();
                         }
 
@@ -102,9 +107,9 @@ public class MainActivity extends AppCompatActivity {
      * @param view
      */
     public void startCompress(View view) {
-        tvStart.setText("");
-        tvSuccess.setText("");
-        tvTotalTime.setText("");
+        tvStart.setText("源文件总大小");
+        tvSuccess.setText("压缩后大小");
+        tvTotalTime.setText("耗时");
         compressTest();
     }
 
@@ -136,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String getTime(long mill) {
         double second = (double) mill / 1000 + (double) (mill % 1000) / 1000;
-        return second + "s ";
+        return String.format(Locale.CHINA,"%.3f秒",second);
     }
 
 }

@@ -14,6 +14,7 @@ import com.junt.imagecompressor.util.ThreadPoolManager;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
@@ -67,7 +68,7 @@ public class Compressor implements Observer {
 
                         //全部压缩操作结束
                         //是否删除源文件
-                        if (!compressConfig.isKeepSource()){
+                        if (!compressConfig.isKeepSource()) {
                             for (ImageInstance instance : imageInstances) {
                                 deleteFile(instance.getInputPath());
                             }
@@ -85,9 +86,9 @@ public class Compressor implements Observer {
         }
     }
 
-    private void deleteFile(String filePath){
-        File file=new File(filePath);
-        if (file.exists()&&file.isFile()){
+    private void deleteFile(String filePath) {
+        File file = new File(filePath);
+        if (file.exists() && file.isFile()) {
             file.delete();
         }
     }
@@ -136,17 +137,18 @@ public class Compressor implements Observer {
         SystemOut.println("ImageCompressor ===>compressQuality()");
         Bitmap inputBitmap = BitmapFactory.decodeFile(imageInstance.getInputPath());
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        int quality = 100;
-        inputBitmap.compress(Bitmap.CompressFormat.JPEG, quality, byteArrayOutputStream);
+        int quality = 90;
+        inputBitmap.compress(compressConfig.getComPressFormat(), quality, byteArrayOutputStream);
         //如果压缩后图片还是>targetSize，则继续压缩
         while (byteArrayOutputStream.toByteArray().length > compressConfig.getTargetSize()) {
             byteArrayOutputStream.reset();
-            quality -= 5;
-            if (quality <= 5) {//限制最低压缩到5
+            quality -= 10;
+            if (quality <= 10) {//限制最低压缩到5
                 quality = 5;
             }
-            inputBitmap.compress(Bitmap.CompressFormat.JPEG, quality, byteArrayOutputStream);
+            inputBitmap.compress(compressConfig.getComPressFormat(), quality, byteArrayOutputStream);
             if (quality == 5) {
+                inputBitmap.recycle();
                 break;
             }
         }
@@ -154,10 +156,9 @@ public class Compressor implements Observer {
         if (compressConfig.getCompressType() == CompressConfig.TYPE_PIXEL_AND_QUALITY) {
             outputPath = imageInstance.getOutPutPath();
         } else {
-            outputPath = imageInstance.getOutPutPath() + getFileName(imageInstance.getInputPath()) + ".jpg";
+            outputPath = imageInstance.getOutPutPath() + getFileName(imageInstance.getInputPath()) + compressConfig.getFileSuffix();
         }
         saveCompressedImage(outputPath, byteArrayOutputStream);
-        inputBitmap.recycle();
     }
 
     /**
@@ -191,7 +192,9 @@ public class Compressor implements Observer {
         Bitmap bitmap = BitmapFactory.decodeFile(imageInstance.getInputPath(), options);
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
-        String outputPath = imageInstance.getOutPutPath() + getFileName(imageInstance.getInputPath()) + ".jpg";
+        bitmap.recycle();
+
+        String outputPath = imageInstance.getOutPutPath() + getFileName(imageInstance.getInputPath()) + compressConfig.getFileSuffix();
         imageInstance.setOutPutPath(outputPath);
         saveCompressedImage(outputPath, byteArrayOutputStream);
 
@@ -205,7 +208,7 @@ public class Compressor implements Observer {
             //质量压缩完成，恢复原始图片输入路径
             imageInstance.setInputPath(originalImagePath);
         }
-        bitmap.recycle();
+
     }
 
     /**

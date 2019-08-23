@@ -1,5 +1,7 @@
 package com.junt.imagecompressor.config;
 
+import android.graphics.Bitmap;
+
 public class CompressConfig {
     //像素压缩
     public static final int TYPE_PIXEL = 0;
@@ -12,6 +14,18 @@ public class CompressConfig {
      * 图片压缩方式
      */
     private int compressType = TYPE_PIXEL_AND_QUALITY;
+
+    /**
+     * 图片压缩格式
+     */
+    private Bitmap.CompressFormat comPressFormat= Bitmap.CompressFormat.JPEG;
+    private String fileSuffix=".jpg";
+
+    /**
+     * 图片压缩像素模式
+     */
+    private Bitmap.Config pixelConfig= Bitmap.Config.ARGB_8888;
+
     /**
      * 图片输出路径
      */
@@ -79,6 +93,32 @@ public class CompressConfig {
         this.maxPixel = maxPixel;
     }
 
+    public Bitmap.Config getPixelConfig() {
+        return pixelConfig;
+    }
+
+    public void setPixelConfig(Bitmap.Config pixelConfig) {
+        this.pixelConfig = pixelConfig;
+    }
+
+    public String getFileSuffix() {
+        return fileSuffix;
+    }
+
+    public void setFileSuffix(String fileSuffix) {
+        this.fileSuffix = fileSuffix;
+    }
+
+    public Bitmap.CompressFormat getComPressFormat() {
+        return comPressFormat;
+    }
+
+    public void setComPressFormat(Bitmap.CompressFormat comPressFormat) {
+        this.comPressFormat = comPressFormat;
+    }
+
+
+
     public static Builder builder() {
         return new Builder();
     }
@@ -110,8 +150,27 @@ public class CompressConfig {
             return this;
         }
 
+        public Builder format(Bitmap.CompressFormat format,Bitmap.Config pixelConfig){
+            config.setComPressFormat(format);
+            if (format== Bitmap.CompressFormat.JPEG){
+                config.setFileSuffix(".jpg");
+            }else if (format== Bitmap.CompressFormat.PNG){
+                config.setFileSuffix(".png");
+            }else {
+                config.setFileSuffix(".webp");
+            }
+            config.setPixelConfig(pixelConfig);
+            return this;
+        }
+
+        public Builder outputDir(String dirPath){
+            config.setOutPutPath(dirPath);
+            return this;
+        }
+
         //构建配置
         public CompressConfig build() {
+
             return config;
         }
     }
