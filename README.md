@@ -18,7 +18,7 @@
 2.  **Add the dependency:**
 ```  gradle
 	dependencies {
-	        implementation 'com.github.xiaojigugu:MasterImageCompress:1.0.0'
+	        implementation 'com.github.xiaojigugu:MasterImageCompress:1.0.1'
 	}
 ```  
 
