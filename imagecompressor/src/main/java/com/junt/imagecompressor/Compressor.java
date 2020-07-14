@@ -8,16 +8,17 @@ import com.junt.imagecompressor.bean.ImageInstance;
 import com.junt.imagecompressor.config.CompressConfig;
 import com.junt.imagecompressor.exception.CompressException;
 import com.junt.imagecompressor.listener.ImageCompressListener;
+import com.junt.imagecompressor.util.FileUtils;
 import com.junt.imagecompressor.util.SystemOut;
 import com.junt.imagecompressor.util.ThreadPoolManager;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 图片压缩类
@@ -25,7 +26,7 @@ import java.util.Observer;
 public class Compressor implements Observer {
     private Handler handler = new Handler();
     //压缩了第几张图片
-    private int compressIndex;
+    private AtomicInteger compressIndex;
 
     @Override
     public void update(Observable observable, Object o) {
@@ -39,15 +40,19 @@ public class Compressor implements Observer {
             return;
         }
         imageCompressListener.onStart();
-        compressIndex = 0;
+        compressIndex = new AtomicInteger(0);
         //多线程压缩
         for (final ImageInstance imageInstance : imageInstances) {
-            SystemOut.println("ImageCompressor ===>循环遍历");
             ThreadPoolManager.getInstance().addTask(new Runnable() {
                 @Override
                 public void run() {
                     switch (compressConfig.getCompressType()) {
                         case CompressConfig.TYPE_PIXEL:
+                        case CompressConfig.TYPE_PIXEL_AND_QUALITY:
+                            //像素压缩+质量压缩
+                            //先进行像素压缩
+                            // 然后再对像素压缩过的图片进行质量压缩
+                            //先将需要质量压缩的图片路径改为像素压缩后的图片输出路径，然后进行质量压缩
                             //仅像素压缩
                             compressPixel(imageInstance, compressConfig);
                             break;
@@ -55,23 +60,14 @@ public class Compressor implements Observer {
                             //仅质量压缩
                             compressQuality(imageInstance, compressConfig);
                             break;
-                        case CompressConfig.TYPE_PIXEL_AND_QUALITY:
-                            //像素压缩+质量压缩
-                            //先进行像素压缩
-                            // 然后再对像素压缩过的图片进行质量压缩
-                            //先将需要质量压缩的图片路径改为像素压缩后的图片输出路径，然后进行质量压缩
-                            compressPixel(imageInstance, compressConfig);
-                            break;
                     }
-                    compressIndex++;
-                    if (compressIndex >= imageInstances.size()) {
+                    compressIndex.incrementAndGet();
+                    if (compressIndex.get() >= imageInstances.size()) {
 
                         //全部压缩操作结束
                         //是否删除源文件
                         if (!compressConfig.isKeepSource()) {
-                            for (ImageInstance instance : imageInstances) {
-                                deleteFile(instance.getInputPath());
-                            }
+                            FileUtils.clearImages(imageInstances);
                         }
                         //通知主线程
                         handler.post(new Runnable() {
@@ -83,13 +79,6 @@ public class Compressor implements Observer {
                     }
                 }
             });
-        }
-    }
-
-    private void deleteFile(String filePath) {
-        File file = new File(filePath);
-        if (file.exists() && file.isFile()) {
-            file.delete();
         }
     }
 
@@ -134,7 +123,6 @@ public class Compressor implements Observer {
      * 质量压缩
      */
     private void compressQuality(ImageInstance imageInstance, CompressConfig compressConfig) {
-        SystemOut.println("ImageCompressor ===>compressQuality()");
         Bitmap inputBitmap = BitmapFactory.decodeFile(imageInstance.getInputPath());
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         int quality = 90;
@@ -142,16 +130,14 @@ public class Compressor implements Observer {
         //如果压缩后图片还是>targetSize，则继续压缩
         while (byteArrayOutputStream.toByteArray().length > compressConfig.getTargetSize()) {
             byteArrayOutputStream.reset();
-            quality -= 10;
-            if (quality <= 10) {//限制最低压缩到5
-                quality = 5;
-            }
+            quality -= 5;
             inputBitmap.compress(compressConfig.getComPressFormat(), quality, byteArrayOutputStream);
             if (quality == 5) {
-                inputBitmap.recycle();
+                //限制最低压缩到5
                 break;
             }
         }
+        inputBitmap.recycle();
         String outputPath;
         if (compressConfig.getCompressType() == CompressConfig.TYPE_PIXEL_AND_QUALITY) {
             outputPath = imageInstance.getOutPutPath();
@@ -208,7 +194,6 @@ public class Compressor implements Observer {
             //质量压缩完成，恢复原始图片输入路径
             imageInstance.setInputPath(originalImagePath);
         }
-
     }
 
     /**
@@ -225,7 +210,7 @@ public class Compressor implements Observer {
             sampleSize = picWidth / maxPixel;
             sampleSize++;
         } else if (picWidth < picHeight && picHeight > maxPixel) {
-            sampleSize = options.outHeight / maxPixel;
+            sampleSize = picHeight / maxPixel;
             sampleSize++;
         }
         return sampleSize;

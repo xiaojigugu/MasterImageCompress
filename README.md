@@ -13,14 +13,14 @@
 			maven { url 'https://jitpack.io' }
 		}
 	}
-```  
+```
 
 2.  **Add the dependency:**
 ```  gradle
 	dependencies {
-	        implementation 'com.github.xiaojigugu:MasterImageCompress:1.0.0'
+	        implementation 'com.github.xiaojigugu:MasterImageCompress:1.0.2'
 	}
-```  
+```
 
 3. **start**  
 ``` xml
@@ -35,10 +35,10 @@
            .builder()
            .keepSource(true) //是否保留源文件
            //压缩方式，分为TYPE_QUALITY、TYPE_PIXEL、TYPE_PIXEL_AND_QUALITY，慎用单独的TYPE_QUALITY（很容易OOM）！
-           .comPressType(CompressConfig.TYPE_PIXEL)
-           //目标长边像素,对TYPE_PIXEL有效（eg：原图分辨率:7952 X 5304，压缩后7952最终会小于2000）
+           .comPressType(CompressConfig.TYPE_PIXEL_AND_QUALITY)
+           //目标长边像素,对TYPE_PIXEL有效（eg：原图分辨率:7952 X 5304，压缩后7952最终会小于1280）
            .maxPixel(1280)
-           //目标大小500kb以内，对TYPE_QUALITY有效
+           //目标大小200kb以内，对TYPE_QUALITY有效
            .targetSize(200 * 1024)
            .format(Bitmap.CompressFormat.WEBP, Bitmap.Config.ARGB_8888) //压缩配置
            .outputDir("storage/emulated/0/DCIM/image_compressed/") //输出目录
@@ -74,4 +74,31 @@
                 }
            })
            .compress();
-```  
+```
+
+4. 新增文件管理类用于适配AndroidQ
+
+   ```java
+   //结合Rxjava将选中的图片拷贝至APP私有目录以方便进行压缩操作
+       private void moveImages(final List<Uri> uris) {
+           Disposable disposable = Observable.create(new ObservableOnSubscribe<List<String>>() {
+               @Override
+               public void subscribe(ObservableEmitter<List<String>> emitter) {
+                   Log.i(TAG, "ObservableOnSubscribe: thread-->" + Thread.currentThread().getName());
+                   emitter.onNext(FileUtils.copyImagesToPrivateDir(getApplicationContext(), uris));
+               }
+           })
+                   .subscribeOn(Schedulers.io())
+                   .observeOn(AndroidSchedulers.mainThread())
+                   .subscribe(new Consumer<List<String>>() {
+                       @Override
+                       public void accept(List<String> objects) {
+                           Log.i(TAG, "subscribe: thread-->" + Thread.currentThread().getName());
+                           //开始压缩
+                           compress(objects);
+                       }
+                   });
+       }
+   ```
+
+   
